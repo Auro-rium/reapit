@@ -1,0 +1,52 @@
+services:
+  reapit:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8088:8000"
+    volumes:
+      - ./outputs:/app/outputs
+    restart: unless-stopped
+    depends_on:
+      - screen-env
+    networks:
+      - default
+      - screen-private
+
+  screen-env:
+    build: ./screen-env
+    ports:
+      - "6080:6080"
+    expose:
+      - "8100"
+    env_file:
+      - .env
+    environment:
+      HOME: /tmp
+      BROWSER_USE_API_KEY: ${BROWSER_USE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      BROWSER_USE_MODEL: ${BROWSER_USE_MODEL:-google/gemini-3.1-flash-lite-image}
+      BROWSER_HEADLESS: ${BROWSER_HEADLESS:-false}
+      DISPLAY: :99
+      PLAYWRIGHT_BROWSERS_PATH: /root/.cache/ms-playwright
+    volumes:
+      - ./outputs/screenshots:/screenshots
+    networks:
+      - default
+      - screen-private
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+      - /root/.config:size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 2g
+    cpus: 2
+    restart: unless-stopped
+
+networks:
+  screen-private:
+    internal: true
