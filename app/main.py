@@ -9,12 +9,12 @@ from app.tools.github import fetch_repo
 from app.persistence import save
 from app.evaluator import evaluate_artifact
 
-def run(url: str, run_id: str | None = None) -> Path:
+def run(url: str, run_id: str | None = None, feedback: str = "") -> Path:
     load_dotenv(); run_id = run_id or uuid.uuid4().hex
     save(run_id, url, "running")
     try:
         repo, files = fetch_repo(url)
-        state = build_graph().invoke({"run_id": run_id, "memory_version": 1, "url": url, "repo": repo, "files": files, "findings": {}, "human": {"status": "pending", "feedback": ""}})
+        state = build_graph().invoke({"run_id": run_id, "memory_version": 1, "url": url, "repo": repo, "files": files, "findings": {}, "human": {"status": "repair_requested" if feedback else "pending", "feedback": feedback}})
         name = repo.get("name", "repository")
         output = Path("outputs") / name / "index.html"
         render(state["guide"], repo, output)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import uuid
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, HttpUrl
@@ -70,10 +70,14 @@ class RepairRequest(BaseModel):
     feedback: str = ""
 
 @app.post("/runs/{run_id}/repair")
-def repair(run_id: str, request: RepairRequest):
-    item = request_repair(run_id, request.feedback)
+def repair(run_id: str, request: RepairRequest, background_tasks: BackgroundTasks):
+    item = get(run_id)
     if not item: raise HTTPException(status_code=404, detail="Run not found")
-    return item
+    request_repair(run_id, request.feedback)
+    # Re-run the complete durable pipeline with the human feedback available
+    # to the Builder. The request returns immediately while the run is rebuilt.
+    background_tasks.add_task(run, item["url"], run_id, request.feedback)
+    return {"run_id": run_id, "status": "repair_queued", "feedback": request.feedback}
 
 @app.post("/runs/{run_id}/decision")
 def human_decision(run_id: str, approved: bool):
