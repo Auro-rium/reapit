@@ -7,6 +7,7 @@ from app.graph import build_graph
 from app.render import render
 from app.tools.github import fetch_repo
 from app.persistence import save
+from app.evaluator import evaluate_artifact
 
 def run(url: str, run_id: str | None = None) -> Path:
     load_dotenv(); run_id = run_id or uuid.uuid4().hex
@@ -22,6 +23,7 @@ def run(url: str, run_id: str | None = None) -> Path:
             browser = httpx.post("http://screen-env:8100/agent-inspect", json={"url": f"http://reapit:8000/open/{name}", "run_id": run_id}, timeout=300).json()
         except Exception as exc:
             browser = {"status": "unavailable", "error": str(exc)}
+        browser["deterministic"] = evaluate_artifact(output)
         state["browser"] = browser
         state["screen_review"] = browser  # backwards-compatible API field
         kept = {k: state.get(k) for k in ("run_id", "memory_version", "url", "repo", "plan", "findings", "research", "design", "build", "guide", "qa", "browser", "screen_review", "human")}
