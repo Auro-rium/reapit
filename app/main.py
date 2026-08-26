@@ -13,17 +13,18 @@ def run(url: str, run_id: str | None = None) -> Path:
     save(run_id, url, "running")
     try:
         repo, files = fetch_repo(url)
-        state = build_graph().invoke({"run_id": run_id, "memory_version": 1, "url": url, "repo": repo, "files": files, "findings": {}})
+        state = build_graph().invoke({"run_id": run_id, "memory_version": 1, "url": url, "repo": repo, "files": files, "findings": {}, "human": {"status": "pending", "feedback": ""}})
         name = repo.get("name", "repository")
         output = Path("outputs") / name / "index.html"
         render(state["guide"], repo, output)
-        screen_review = {}
+        browser = {}
         try:
-            screen_review = httpx.post("http://screen-env:8100/inspect", json={"url": f"http://reapit:8000/open/{name}", "run_id": run_id}, timeout=90).json()
+            browser = httpx.post("http://screen-env:8100/agent-inspect", json={"url": f"http://reapit:8000/open/{name}", "run_id": run_id}, timeout=300).json()
         except Exception as exc:
-            screen_review = {"status": "unavailable", "error": str(exc)}
-        state["screen_review"] = screen_review
-        kept = {k: state.get(k) for k in ("run_id", "memory_version", "url", "repo", "plan", "findings", "guide", "qa", "screen_review")}
+            browser = {"status": "unavailable", "error": str(exc)}
+        state["browser"] = browser
+        state["screen_review"] = browser  # backwards-compatible API field
+        kept = {k: state.get(k) for k in ("run_id", "memory_version", "url", "repo", "plan", "findings", "research", "design", "build", "guide", "qa", "browser", "screen_review", "human")}
         save(run_id, url, "completed", name, str(output), kept, approval="pending")
         return output
     except Exception as exc:

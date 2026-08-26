@@ -11,6 +11,11 @@ class RepoState(TypedDict, total=False):
     files: dict[str, str]
     plan: list[str]
     findings: Annotated[dict[str, Any], merge_findings]
+    research: dict[str, Any]
+    design: dict[str, Any]
+    build: dict[str, Any]
+    browser: dict[str, Any]
+    human: dict[str, Any]
     guide: dict[str, Any]
     output_path: str
     qa: dict[str, Any]
