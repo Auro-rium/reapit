@@ -156,46 +156,43 @@ The UI/UX agent owns the frontend layout and CSS. The renderer does not impose a
 
 ```mermaid
 flowchart TD
-    U[User submits GitHub URL] --> F[FastAPI]
-    F --> O[Orchestrator]
-    O --> P[LLM Planner]
+    U[User submits GitHub URL] --> API[FastAPI API]
+    API --> ORCH[Orchestrator / LangGraph]
+    ORCH --> PLANNER[Planner Agent]
+    PLANNER --> RESEARCH[Research Agent]
 
-    P --> R1[Markdown Research Tool]
-    P --> R2[Structure Research Tool]
-    P --> R3[Metadata Research Tool]
-    P --> R4[Contributor Research Tool]
-    P --> R5[Links Research Tool]
-    P --> R6[Specialist Research Tool]
+    RESEARCH --> T1[README / Markdown Tool]
+    RESEARCH --> T2[Repository Structure Tool]
+    RESEARCH --> T3[GitHub Metadata Tool]
+    RESEARCH --> T4[Contributors Tool]
+    RESEARCH --> T5[Links / References Tool]
+    RESEARCH --> T6[Code / Specialist Tool]
+    T1 --> MEM[(Structured Project Memory)]
+    T2 --> MEM
+    T3 --> MEM
+    T4 --> MEM
+    T5 --> MEM
+    T6 --> MEM
 
-    R1 --> M[Shared Working Memory]
-    R2 --> M
-    R3 --> M
-    R4 --> M
-    R5 --> M
-    R6 --> M
-
-    M --> V[Visual Strategy Agent]
-    M --> IA[Information Architecture Agent]
-    M --> A11Y[Accessibility Agent]
-    M --> D[Mermaid Planning Agent]
-
-    V --> UX[UI/UX Builder]
-    IA --> UX
-    A11Y --> UX
-    D --> UX
-
-    UX --> H[LLM-generated HTML and CSS]
-    H --> B[Browser Use Agent]
-    B --> S[Contained Chromium and noVNC]
-    S --> Q[Visual Feedback]
-    Q --> HITL[Human Approval UI]
-    H --> HITL
-
+    MEM --> DESIGN[Design Agent]
+    DESIGN --> BUILD[Builder Agent]
+    BUILD --> ART[HTML + CSS + Mermaid Assets]
+    ART --> BROWSER[Browser Agent]
+    BROWSER --> CHROME[Contained Chromium + noVNC]
+    CHROME --> OBS[DOM + Screenshot + Console Feedback]
+    OBS --> EVAL[Deterministic Evaluator + Visual Review]
+    EVAL -->|Fix needed| BUILD
+    EVAL -->|Pass| HITL[Human Approval]
+    HITL -->|Feedback| BUILD
     HITL -->|Approve| OUT[Publish Guide]
-    HITL -->|Reject or feedback| UX
-    H --> DB[(SQLite Persistence)]
-    B --> DB
-```
+
+    ORCH --> DB[(SQLite State)]
+    MEM --> DB
+    BUILD --> DB
+    BROWSER --> DB
+``` 
+
+The system intentionally has four reasoning agents. Repository inspection, metadata retrieval, link extraction, and artifact checks remain deterministic tools. Shared state is divided into working memory, generated artifacts, and durable SQLite state.
 
 ## Tests and deployment
 
