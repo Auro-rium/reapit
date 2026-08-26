@@ -37,3 +37,15 @@ def decide(run_id, approval):
     with sqlite3.connect(DB_PATH) as db:
         db.execute("UPDATE runs SET approval=?, updated_at=? WHERE run_id=?", (approval,_now(),run_id))
     return get(run_id)
+
+def request_repair(run_id, feedback=""):
+    """Persist human repair feedback without destroying the current artifact."""
+    init()
+    with sqlite3.connect(DB_PATH) as db:
+        row = db.execute("SELECT state_json FROM runs WHERE run_id=?", (run_id,)).fetchone()
+        if not row: return None
+        state = json.loads(row[0] or "{}")
+        state["human"] = {"status": "repair_requested", "feedback": feedback}
+        db.execute("UPDATE runs SET approval=?, state_json=?, updated_at=? WHERE run_id=?",
+                   ("repair_requested", json.dumps(state, default=str), _now(), run_id))
+    return get(run_id)

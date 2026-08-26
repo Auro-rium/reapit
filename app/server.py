@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, HttpUrl
 import httpx
 from app.main import run
-from app.persistence import get, list_runs, decide
+from app.persistence import get, list_runs, decide, request_repair
 
 app = FastAPI(title="Reapit", version="0.1.0")
 OUTPUTS = Path("outputs")
@@ -63,6 +63,15 @@ def runs():
 @app.get("/runs/{run_id}")
 def run_status(run_id: str):
     item = get(run_id)
+    if not item: raise HTTPException(status_code=404, detail="Run not found")
+    return item
+
+class RepairRequest(BaseModel):
+    feedback: str = ""
+
+@app.post("/runs/{run_id}/repair")
+def repair(run_id: str, request: RepairRequest):
+    item = request_repair(run_id, request.feedback)
     if not item: raise HTTPException(status_code=404, detail="Run not found")
     return item
 
